@@ -111,6 +111,14 @@ class Test extends Component {
 
   > 组件挂载到DOM后调用，且只会被调用一次
 
+  > <font color="red">用途：</font>
+  >
+  > 1.依赖DOM节点的初始化。比如网络请求数据
+  >
+  > 2.订阅。记得在卸载时取消订阅
+  >
+  > 3.可直接调用`setState()`（不推荐）
+
 #### 组件的更新(update)阶段
 
 > react组件更新机制:`setState`引起的state更新或父组件重新render引起的props更新，更新后的state和props相对之前无论是否有变化，都将引起子组件的重新render。
@@ -224,7 +232,11 @@ class Test extends Component {
 
   > 此方法在组件被卸载前调用，可以在这里执行一些清理工作，比如清除组件中使用的定时器，清除`componentDidMount`中手动创建的DOM元素等，以避免引起内存泄漏。
 
-  > 卸载组件前的收尾工作
+  > 卸载组件前的收尾工作:
+  >
+  > 一些必要的清理操作。
+  >
+  > 不应该调用`setState()`，因为卸载了，所以永远不会生效
 
 ### 新版生命周期解读（v16）
 
