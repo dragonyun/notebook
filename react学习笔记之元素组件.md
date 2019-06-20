@@ -101,6 +101,8 @@ class Welcome extends React.Component {
 
 > 通过类定义一个React组件，需要**继承React**并且**render返回一个React元素**
 
+> 在 `React.Component` 的子类中有个**必须定义**的 `render()`函数。其他方法均为可选。
+
 #### 渲染组件
 
 > 组件不仅仅是DOM标签，还可以是用户自定义的组件

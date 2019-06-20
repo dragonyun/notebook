@@ -59,6 +59,40 @@ class Test extends Component {
 >
 > `super()`调用基类构造方法，向子组件注入父组件的`props`
 
+> <font color="red">**用途**</font>：构造函数仅用于以下两种情况
+>
+> - 通过给 `this.state` 赋值对象来初始化**内部 state**。
+> - 为**事件处理函数**绑定实例
+>
+> ```js
+> constructor(props) {
+>   super(props);
+>   // 不要在这里调用 this.setState()
+>   this.state = { counter: 0 };
+>   this.handleClick = this.handleClick.bind(this);
+> }
+> ```
+>
+> 只能在构造函数中直接为 `this.state` 赋值。如需在其他方法中赋值，你应使用 `this.setState()` 替代。
+
+> <font color="red">注意：</font>
+>
+> **不允许在构造函数中使用`this.setState()`**
+>
+> **避免将 props 的值复制给 state！这是一个常见的错误：**
+>
+> ```js
+> constructor(props) {
+>  super(props);
+>  // 不要这样做
+>  this.state = { color: props.color };
+> }
+> ```
+>
+> 如此做毫无必要（你可以直接使用 `this.props.color`），同时还产生了 bug（更新 prop 中的 `color` 时，并不会影响 state）。
+>
+> **只有在你刻意忽略 prop 更新的情况下使用。**
+
 
 
 #### 组件的挂载(Mounting)阶段
