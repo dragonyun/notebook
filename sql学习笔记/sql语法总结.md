@@ -912,4 +912,63 @@ ADD CONSTRAINT chk_Person CHECK (P_Id>0 AND City='Sandnes')
 
 #### 4.20 ALTER TABLE
 
-- 功能：已有表中添加、删除或修改列。
+- 功能：已有表中添加、删除或修改**列**。
+
+- 返回：执行结果
+
+- 说明：还是用于跑数据库脚本的时候，和drop配合使用
+
+- ```sql
+  语法
+  1.ALTER TABLE table_name ADD column_name datatype
+  添加列
+  2.ALTER TABLE table_name DROP COLUMN column_name
+  删除列
+  3.ALTER TABLE table_name MODIFY COLUMN column_name datatype
+  改变某列数据类型
+  ```
+
+- ```sql
+  语法说明
+  1.ALTER TABLE Persons ADD DateOfBirth date
+  向表Persons中添加列DataOfBirth，其数据类型是data
+  2.ALTER TABLE Persons MODIFY COLUMN DateOfBirth year
+  改变表Persons中的DataOfBirth列，变为year类型
+  3.ALTER TABLE Persons DROP COLUMN DateOfBirth
+  删除表Persons中的DataOfBirth列
+  ```
+
+- 补充：上例只针对`MySql`
+
+#### 4.21 AUTO INCREMENT
+
+- 功能：在新记录插入表中时生成一个唯一的数字
+
+- 返回：执行结果
+
+- 说明：就是主键字段数字自动创建功能
+
+- ```sql
+  语法
+  1.CREATE TABLE Persons
+  (
+  ID int NOT NULL AUTO_INCREMENT,
+  LastName varchar(255) NOT NULL,
+  FirstName varchar(255),
+  Address varchar(255),
+  City varchar(255),
+  PRIMARY KEY (ID)
+  )
+  针对字段ID，默认地，AUTO_INCREMENT 的开始值是 1，每条新记录递增 1。
+  2.ALTER TABLE Persons AUTO_INCREMENT=100
+  换一下初值，从100开始
+  3.ALTER TABLE table_name CHANGE column_name column_name data_type(size) constraint_name AUTO_INCREMENT;
+  即
+  ALTER TABLE student CHANGE id id INT( 11 ) NOT NULL AUTO_INCREMENT;
+  给已存在的列添加自增语法
+  ```
+
+- 补充：不同数据库有差异，上例针对MySQL
+
+#### 4.22 视图
+
