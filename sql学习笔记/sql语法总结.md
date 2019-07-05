@@ -972,3 +972,28 @@ ADD CONSTRAINT chk_Person CHECK (P_Id>0 AND City='Sandnes')
 
 #### 4.22 视图
 
+- 功能：可视化的表？有什么用，不清楚
+
+- 说明：在 SQL 中，视图是基于 SQL 语句的结果集的可视化的表。
+
+  视图包含行和列，就像一个真实的表。视图中的字段就是来自一个或多个数据库中的真实的表中的字段。
+
+  您可以向视图添加 SQL 函数、WHERE 以及 JOIN 语句，也可以呈现数据，就像这些数据来自于某个单一的表一样。
+
+- ```sql
+  语法
+  // 创建视图
+  CREATE VIEW view_name AS
+  SELECT column_name(s)
+  FROM table_name
+  WHERE condition
+  // 更新视图
+  CREATE OR REPLACE VIEW view_name AS
+  SELECT column_name(s)
+  FROM table_name
+  WHERE condition
+  // 撤销视图
+  DROP VIEW view_name
+  ```
+
+- 补充：我不知道有什么用，以后再补充。
