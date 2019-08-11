@@ -38,9 +38,12 @@ typora-root-url: img
 
 #### 组件初始化(initialization)阶段
 
-> 也就是以下代码中类的构造方法( constructor() ),Test类继承了react Component这个基类，也就继承这个react的基类，才能有render(),生命周期等方法可以使用，这也说明为什么**函数组件不能使用这些方法**的原因。
+> 也就是以下代码中类的构造方法( constructor() ),Test类继承了React.Component这个基类，也就继承这个react的基类，才能有render(),生命周期等方法可以使用，这也说明为什么**函数组件不能使用这些方法**的原因。
 
-> `super(props)`用来调用基类的构造方法( constructor() ), 也将父组件的props注入给子组件，功子组件读取(组件中props只读不可变，state可变)。
+> `super(props)`用来调用基类的构造方法( constructor() ), 也将父组件的props注入给子组件，供子组件读取(组件中props只读不可变，state可变)。
+>
+> <font color="red">注意</font>：`super(props)`应放在其他语句之前调用，否则在构造函数中`this.props`可能会出现未定义的bug。
+>
 > 而`constructor()`用来做一些组件的初始化工作，如定义this.state的初始内容。
 
 ```js
@@ -55,9 +58,8 @@ class Test extends Component {
 
 > 初始化阶段=构造方法`constructor()`
 >
-> 继承让自定义组件有了render，生命周期等，函数组件不讨论生命周期
+> 继承让自定义组件有了render，生命周期等，函数组件不讨论生命周期。
 >
-> `super()`调用基类构造方法，向子组件注入父组件的`props`
 
 > <font color="red">**用途**</font>：构造函数仅用于以下两种情况
 >
@@ -74,6 +76,12 @@ class Test extends Component {
 > ```
 >
 > 只能在构造函数中直接为 `this.state` 赋值。如需在其他方法中赋值，你应使用 `this.setState()` 替代。
+
+> <font color="red">注意</font>：
+>
+> **如果不初始化state或不进行方法绑定，则不需要为React组件实现构造函数。**
+>
+> 注：这句话可能在旧版里面不适用，因为旧版把生命周期分为四个阶段，新版只有三个阶段。
 
 > <font color="red">注意：</font>
 >
@@ -99,17 +107,33 @@ class Test extends Component {
 
 > 此阶段分为`componentWillMount`，`render`，`componentDidMount`三个时期。
 
-- `componentWillMount`
+- `componentWillMount()`
 
   > 在组件挂载到DOM前调用，且只会被调用一次，在这边调用`this.setState`不会引起组件重新渲染，也可以把写在这边的内容提前到constructor()中，所以项目中很少用。
+  >
+  > 新版已不推荐使用该函数，在v17之后将被弃用。
 
-- `render`
+- `render()`
 
-  > 根据组件的props和state（无两者的重传递和重赋值，论值是否有变化，都可以引起组件重新render） ，return 一个React元素（描述组件，即`UI`），不负责组件实际渲染工作，之后由React自身根据此元素去渲染出页面DOM。render是**纯函数**（Pure function：函数的返回结果只依赖于它的参数；函数执行过程里面没有副作用），不能在里面执行`this.setState`，会有改变组件状态的副作用。
+  > **`render()`方法是class组件中唯一必须实现的方法。**
+  >
+  > 根据组件的props和state（无两者的重传递和重赋值，论值是否有变化，都可以引起组件重新render） ，return 一个React元素（描述组件，即`UI`），不负责组件实际渲染工作，之后由React自身根据此元素去渲染出页面DOM。
+  >
+  > render是**纯函数**（Pure function：函数的返回结果只依赖于它的参数；函数执行过程里面没有副作用），不能在里面执行`this.setState`，会有改变组件状态的副作用。
+  >
+  > ---
+  >
+  > `render()`函数返回以下五种类型之一：
+  >
+  > - **React元素**。通常通过 JSX 创建。例如，`<div />` 会被 React 渲染为 DOM 节点，`<MyComponent />` 会被 React 渲染为自定义组件，无论是 `<div />` 还是 `<MyComponent />` 均为 React 元素。
+  > - **数组或fragments**。使得 render 方法可以返回多个元素。
+  > - **Portals**。可以渲染子节点到不同的 DOM 子树中。
+  > - **字符串或数值类型**。它们在 DOM 中会被渲染为文本节点。
+  > - **布尔类型或者null**。什么都不渲染。（主要用于支持返回 `test && <Child />` 的模式，其中 test 为布尔类型。)
 
-- `componentDidMount`
+- `componentDidMount()`
 
-  > 组件挂载到DOM后调用，且只会被调用一次
+  > 组件挂载到DOM后调用，且只会被调用一次。
 
   > <font color="red">用途：</font>
   >
@@ -119,7 +143,7 @@ class Test extends Component {
   >
   > 3.可直接调用`setState()`（不推荐）
 
-#### 组件的更新(update)阶段
+#### 组件的更新(Updation)阶段
 
 > react组件更新机制:`setState`引起的state更新或父组件重新render引起的props更新，更新后的state和props相对之前无论是否有变化，都将引起子组件的重新render。
 
@@ -127,7 +151,7 @@ class Test extends Component {
 
   - 父组件重新render之一
 
-    > 直接使用,每当父组件重新render导致的重传props，子组件将直接跟着重新渲染，无论props是否有变化。可通过`shouldComponentUpdate`方法优化。
+    > 直接使用,**每当父组件重新render导致的重传props，子组件将直接跟着重新渲染，无论props是否有变化**。可通过`shouldComponentUpdate`方法优化。
     >
     > ```js
     > class Child extends Component {
@@ -169,7 +193,7 @@ class Test extends Component {
 
   - 组件本身调用setState
 
-    > 组件本身调用`setState`，无论state有没有变化。可通过`shouldComponentUpdate`方法优化。
+    > **组件本身调用`setState`，无论state有没有变化**。可通过`shouldComponentUpdate`方法优化。
     >
     > ```js
     > class Child extends Component {
@@ -212,6 +236,10 @@ class Test extends Component {
 
   > 这边也可以看出，就算`componentWillReceiveProps()`中执行了`this.setState`，更新了state，但在render前（如`shouldComponentUpdate`，`componentWillUpdate`），this.state依然指向更新前的state，不然`nextState`及当前组件的this.state的对比就一直是true了。
 
+  > <font color="red">注意：</font>**该方法仅作为性能优化的方式而存在**。
+  >
+  > 后续可能会将该函数当做提示而不是指令。也就是说返回false，仍然会重新渲染
+
 - `componentWillUpdate(nextProps, nextState)`
 
   > 此方法在调用render方法前执行，在这边可执行一些组件更新发生前的工作，一般较少用。
@@ -224,7 +252,7 @@ class Test extends Component {
 
   > 此方法在组件更新后被调用，可以操作组件更新的DOM，`prevProps`和`prevState`这两个参数指的是组件更新前的props和state
 
-#### 卸载阶段
+#### 卸载阶段(Unmouting)阶段
 
 > 此阶段只有一个生命周期方法：`componentWillUnmount`
 
@@ -267,7 +295,14 @@ class Test extends Component {
 
 - `getDerivedStateFromProps`
 
-  > **`static` `getDerivedStateFromProps(props, state)`** 在组件创建时和更新时的render方法之前调用，它应该返回一个对象来更新状态，或者返回null来不更新任何内容。
+  > **`static` `getDerivedStateFromProps(props, state)`** 在组件创建时和更新时的render方法之前调用，它应该返回一个对象来更新状态state，或者返回null来不更新任何内容。
+
+  > <font color="red">注意：</font>
+  >
+  > - 此方法适用于[罕见的用例](https://react.docschina.org/blog/2018/06/07/you-probably-dont-need-derived-state.html#when-to-use-derived-state)，即 state 的值在任何时候都取决于 props。
+  > - 此方法无权访问组件实例。
+
+  > 所以这个函数用的不多，推荐使用别的函数去处理你的逻辑。
 
 - `getSnapshotBeforeUpdate`
 
@@ -309,7 +344,6 @@ class Test extends Component {
   }
   ```
 
-  
 
 #### 去除的生命周期
 
