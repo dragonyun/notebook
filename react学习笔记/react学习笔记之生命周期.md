@@ -251,6 +251,18 @@ class Test extends Component {
 - `componentDidUpdate(prevProps, prevState)`
 
   > 此方法在组件更新后被调用，可以操作组件更新的DOM，`prevProps`和`prevState`这两个参数指的是组件更新前的props和state
+  >
+  > 在新版中加入了第三个参数snapshot。
+  >
+  > 该函数会在更新后立即调用。首次渲染不会执行此方法。
+  >
+  > 用途：
+  >
+  > - 在此处进行DOM操作
+  > - 对更新前后的props进行比较
+  > - 在此处进行网络请求
+  >
+  > - 可直接调用setSate()函数，但是它必须放在条件语句里，否则会死循环的。
 
 #### 卸载阶段(Unmouting)阶段
 
@@ -269,6 +281,25 @@ class Test extends Component {
 ### 新版生命周期解读（v16）
 
 > 如上图，生命周期被改动了，v16.04之后都遵循着新版的生命周期
+
+#### 新版生命周期函数一览
+
+> - 挂载阶段
+>   - constructor()
+>   - `static getDerivedStateFromProps()`
+>   - `render()`
+>   - `componentDidMount()`
+> - 更新阶段
+>   - `static gitDerivedStateFromProps()`
+>   - `shouldComponentUpdate()`
+>   - `render()`
+>   - `getSnapshotBeforeUpdate()`
+>   - `componentDidUpdate()`
+> - 卸载阶段
+>   - `componentWillUnmount()`
+> - 错误处理
+>   - `static getDerivedStateFromError()`
+>   - `componentDidCatch()`
 
 #### 变更缘由
 
@@ -299,14 +330,18 @@ class Test extends Component {
 
   > <font color="red">注意：</font>
   >
-  > - 此方法适用于[罕见的用例](https://react.docschina.org/blog/2018/06/07/you-probably-dont-need-derived-state.html#when-to-use-derived-state)，即 state 的值在任何时候都取决于 props。
+  > - 此方法适用于罕见的用例，即 state 的值在任何时候都取决于 props。
   > - 此方法无权访问组件实例。
 
   > 所以这个函数用的不多，推荐使用别的函数去处理你的逻辑。
 
 - `getSnapshotBeforeUpdate`
 
-  > **`getSnapshotBeforeUpdate()`** 被调用于render之后，可以读取但无法使用DOM的时候。它使您的组件可以在可能更改之前从DOM捕获一些信息（例如滚动位置）。此生命周期返回的任何值都将作为参数传递给`componentDidUpdate（）`。
+  > **`getSnapshotBeforeUpdate(prevProps, prevState)`** 被调用于render之后，可以读取但无法使用DOM的时候。它使您的组件可以在可能更改之前从DOM捕获一些信息（例如滚动位置）。此生命周期返回的任何值都将作为参数传递给`componentDidUpdate（）`，作为它的第三个参数。
+
+  > <font color='red'>注意</font>：此用法并不常见，但它可能出现在 UI 处理中，如需要以特殊方式处理滚动位置的聊天线程等。
+  >
+  > 应返回 snapshot 的值（或 `null`）。
 
   ```js
   // 官方例子
@@ -350,3 +385,99 @@ class Test extends Component {
 - `componentWillMount`，`componentWillReceiveProps`，`componentWillUpdate`
 
   > 都位于render之前，被`getDerivedStateFromProps`替换掉。
+
+#### 异常捕获
+
+> [Error boundaries](https://react.docschina.org/docs/error-boundaries.html) 是 React 组件，它会在其子组件树中的任何位置捕获 JavaScript 错误，并记录这些错误，展示降级 UI 而不是崩溃的组件树。Error boundaries 组件会捕获在渲染期间，在生命周期方法以及其整个树的构造函数中发生的错误。
+
+> 如果 class 组件定义了生命周期方法 `static getDerivedStateFromError()` 或 `componentDidCatch()` 中的任何一个（或两者），它就成为了 Error boundaries。通过生命周期更新 state 可让组件捕获树中未处理的 JavaScript 错误并展示降级 UI。
+
+> 仅使用 Error boundaries 组件来从意外异常中恢复的情况；**不要将它们用于流程控制。**
+
+> **注意：**Error boundaries 仅捕获组件树中**以下**组件中的错误。但它本身的错误无法捕获。
+
+- 涉及到两个函数：`static getDerivedStateFromError()`和`componentDidCatch()`
+
+- `static getDerivedStateFromError()`
+
+> ```js
+> static getDerivedStateFromError(error)
+> ```
+>
+> 此生命周期会在后代组件抛出错误后被调用。 它将抛出的错误作为参数，并返回一个值以更新 state
+>
+> ```js
+> class ErrorBoundary extends React.Component {
+>   constructor(props) {
+>     super(props);
+>     this.state = { hasError: false };
+>   }
+> 
+>   static getDerivedStateFromError(error) {
+>     // 更新 state 使下一次渲染可以显降级 UI
+>     return { hasError: true };
+>   }
+> 
+>   render() {
+>     if (this.state.hasError) {
+>       // 你可以渲染任何自定义的降级  UI
+>       return <h1>Something went wrong.</h1>;
+>     }
+> 
+>     return this.props.children; 
+>   }
+> }
+> ```
+>
+> **注意**
+>
+> `getDerivedStateFromError()` 会在`渲染`阶段调用，因此不允许出现副作用。 如遇此类情况，请改用 `componentDidCatch()`。
+
+- ### `componentDidCatch()`
+
+> ```js
+> componentDidCatch(error, info)
+> ```
+>
+> 此生命周期在后代组件抛出错误后被调用。 它接收两个参数：
+>
+> 1. `error` —— 抛出的错误。
+> 2. `info` —— 带有 `componentStack` key 的对象，其中包含[有关组件引发错误的栈信息](https://react.docschina.org/docs/error-boundaries.html#component-stack-traces)。
+>
+> `componentDidCatch()` 会在“提交”阶段被调用，因此允许执行副作用。 它应该用于记录错误之类的情况：
+>
+> ```js
+> class ErrorBoundary extends React.Component {
+>   constructor(props) {
+>     super(props);
+>     this.state = { hasError: false };
+>   }
+> 
+>   static getDerivedStateFromError(error) {
+>     // 更新 state 使下一次渲染可以显示降级 UI
+>     return { hasError: true };
+>   }
+> 
+>   componentDidCatch(error, info) {
+>     // "组件堆栈" 例子:
+>     //   in ComponentThatThrows (created by App)
+>     //   in ErrorBoundary (created by App)
+>     //   in div (created by App)
+>     //   in App
+>     logComponentStackToMyService(info.componentStack);
+>   }
+> 
+>   render() {
+>     if (this.state.hasError) {
+>       // 你可以渲染任何自定义的降级 UI
+>       return <h1>Something went wrong.</h1>;
+>     }
+> 
+>     return this.props.children; 
+>   }
+> }
+> ```
+>
+> 注意
+>
+> 如果发生错误，你可以通过调用 `setState` 使用 `componentDidCatch()` 渲染降级 UI，但在未来的版本中将不推荐这样做。 可以使用静态 `getDerivedStateFromError()` 来处理降级渲染。
