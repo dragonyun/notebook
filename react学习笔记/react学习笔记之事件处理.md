@@ -155,3 +155,21 @@ ReactDOM.render(
 > 上述两种方式是等价的，分别通过[箭头函数](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/Arrow_functions)和 [`Function.prototype.bind`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_objects/Function/bind) 来实现。
 >
 > 在这两种情况下，React 的事件对象 `e` 会被作为第二个参数传递。如果通过箭头函数的方式，事件对象必须显式的进行传递，而通过 `bind` 的方式，事件对象以及更多的参数将会被隐式的进行传递。
+
+### 我的理解
+
+> 事件处理就是在react组件元素中写脚本函数，无论是点击，选择，还是焦点事件，绑定在元素上，写出来该事件对应的处理函数。
+>
+> 
+>
+> 关于事件处理函数的编写，官方推荐的方法是在构造里面先给函数绑定this，再调用，否则你在调用的时候this是undefined的。这样很麻烦。
+>
+> 
+>
+> 在现在的编码过程中，我们大多采用了第一种“实验性”做法，不知道现在还是不是“实验性”的；
+>
+> 不需要在构造函数里面去绑定this，直接写函数，不过要箭头函数，并且赋值给变量，就可以直接用。
+>
+> 
+>
+> 给的第二种方法我没用过，不过还是写箭头函数，感觉有点绕。

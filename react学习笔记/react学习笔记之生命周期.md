@@ -398,7 +398,7 @@ class Test extends Component {
 
 - 涉及到两个函数：`static getDerivedStateFromError()`和`componentDidCatch()`
 
-- `static getDerivedStateFromError()`
+- ### `static getDerivedStateFromError()`
 
 > ```js
 > static getDerivedStateFromError(error)
