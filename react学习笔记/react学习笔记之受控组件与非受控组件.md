@@ -244,11 +244,24 @@
 > ReactDOM.render(<input value="hi" />, mountNode);
 > 
 > setTimeout(function() {
->   ReactDOM.render(<input value={null} />, mountNode);
+> ReactDOM.render(<input value={null} />, mountNode);
 > }, 1000);
 > ```
 >
-> 
+
+- ## 总结
+
+> 其实我之前并没有理解这个受控组件是个什么东西，有什么价值。
+>
+> 现在我多了一些理解，我觉得这东西很强啊。
+>
+> 首先，受控组件比如input，select这些，他们有显示的输入值，有`onChange`事件，
+>
+> 那我们让它受控是，我们用state里面的变量绑定了控件的value，然后通过`onChange`等事件，再手动改变state中的值，从而改变了控件的显示，
+>
+> 也就是说控件自己说了不算，它的显示内容，它的事件处理都是我们人为写的程序，甚至你都可以为几个并列的input绑定同一个`onChange`事件，通过name来区分，
+>
+> 我的理解就是不再放权给组件本身，让它去处理什么，整个过程都接管过来。
 
 ---
 
@@ -256,7 +269,7 @@
 
 > 非受控组件，这时表单数据将交由 DOM 节点来处理。
 >
-> 要编写一个非受控组件，而不是为每个状态更新都编写数据处理函数，你可以 [使用 ref](https://react.docschina.org/docs/refs-and-the-dom.html) 来从 DOM 节点中获取表单数据。
+> 要编写一个非受控组件，而不是为每个状态更新都编写数据处理函数，你可以 **使用 ref** 来从 DOM 节点中获取表单数据。
 >
 > 例如，下面的代码使用非受控组件接受一个表单的值:
 >

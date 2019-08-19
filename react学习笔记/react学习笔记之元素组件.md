@@ -137,6 +137,6 @@ ReactDOM.render(
 > 3. `Welcome` 组件将 `<h1>Hello, Sara</h1>` 元素作为返回值。
 > 4. React DOM 将 DOM 高效地更新为 `<h1>Hello, Sara</h1>`。
 
-- 注意：自定义组件必须以大写字母开头。
+- **注意**：自定义组件必须以大写字母开头。
 
 > React 会将以小写字母开头的组件视为原生 DOM 标签。例如，`<div />` 代表 HTML 的 div 标签，而 `<Welcome />` 则代表一个组件，并且需在作用域内使用 `Welcome`。

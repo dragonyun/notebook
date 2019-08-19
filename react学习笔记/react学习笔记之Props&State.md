@@ -44,6 +44,87 @@ ReactDOM.render(
 
 - **所有 React 组件都必须像纯函数一样保护它们的 props 不被更改。**
 
+#### 类型检查及默认值
+
+> `defaultProps` 用于确保 `this.props.xxx` 在父组件没有指定其值时，有一个默认值。
+>
+> `propTypes` 类型检查发生在 `defaultProps` 赋值后，所以类型检查也适用于 `defaultProps`。
+
+> **PropTypes**
+>
+> `PropTypes` 提供一系列验证器，可用于确保组件接收到的数据类型是有效的。
+>
+> ```js
+> import PropTypes from 'prop-types';
+> 
+> class Greeting extends React.Component {
+>   render() {
+>     return (
+>       <h1>Hello, {this.props.name}</h1>
+>     );
+>   }
+> }
+> 
+> Greeting.propTypes = {
+>   name: PropTypes.string
+> };
+> ```
+>
+> 在本例中, 我们使用了 `PropTypes.string`。当传入的 `prop` 值类型不正确时，JavaScript 控制台将会显示警告。出于性能方面的考虑，`propTypes` 仅在开发模式下进行检查。
+>
+> 不过，我在第三方组件antd里面很常见这个东西，至于要不要只在开发模式下用，存疑。
+>
+> 可以检测的类型很全面，不只是基本的类型，还有元素，枚举等，可参考官网。
+
+> PropTypes.element
+>
+> 可以通过 `PropTypes.element` 来确保传递给组件的 children 中只包含一个元素。
+>
+> ```js
+> import PropTypes from 'prop-types';
+> 
+> class MyComponent extends React.Component {
+>   render() {
+>     // 这必须只有一个元素，否则控制台会打印警告。
+>     const children = this.props.children;
+>     return (
+>       <div>
+>         {children}
+>       </div>
+>     );
+>   }
+> }
+> 
+> MyComponent.propTypes = {
+>   children: PropTypes.element.isRequired
+> };
+> ```
+
+> **defaultProps**
+>
+> 可以通过配置特定的 `defaultProps` 属性来定义 `props` 的默认值。
+>
+> ```js
+> class Greeting extends React.Component {
+>   render() {
+>     return (
+>       <h1>Hello, {this.props.name}</h1>
+>     );
+>   }
+> }
+> 
+> // 指定 props 的默认值：
+> Greeting.defaultProps = {
+>   name: 'Stranger'
+> };
+> 
+> // 渲染出 "Hello, Stranger"：
+> ReactDOM.render(
+>   <Greeting />,
+>   document.getElementById('example')
+> );
+> ```
+
 
 
 ### State
@@ -148,6 +229,13 @@ this.setState(function(state, props) {
 > 处理这种问题的方法是让`setState()`接收一个函数而不是一个对象。
 >
 > 那么第一个参数就是上一个state，第二个参数是将此次更新被应用时的props。
+
+> **setState更新时间**
+>
+> 调用setState()修改的数据真正更新发生在**即将要执行下一次的render函数时**
+>
+> **这之间发生了什么？**
+> `setState`调用后，React会执行一个事务（Transaction），在这个事务中，React将新state放进一个队列中，当事务完成后，React就会刷新队列，然后启动另一个事务，这个事务包括执行 `shouldComponentUpdate` 方法来判断是否重新渲染，如果是，React就会进行state合并（`state merge`）,生成新的state和props；如果不是，React仍然会更新`this.state`，只不过不会再`render`了。
 
 - 数据是向下流动的
 
