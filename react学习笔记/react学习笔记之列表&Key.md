@@ -171,3 +171,42 @@
 > ```
 >
 > 其实我平时用这种写法还挺多的
+
+### 有key的非可控组件
+
+> 这里关于key有一个很牛的做法
+>
+> 场景是这样的：我们希望在改变用户的时候把某个组件整体初始化掉
+>
+> ```react
+> class EmailInput extends Component {
+>   state = { email: this.props.defaultEmail };
+> 
+>   handleChange = event => {
+>     this.setState({ email: event.target.value });
+>   };
+> 
+>   render() {
+>     return <input onChange={this.handleChange} value={this.state.email} />;
+>   }
+> }
+> ```
+>
+> 就是让组件自己存储临时的 email state。在这种情况下，组件仍然可以从 prop 接收“初始值”，但是更改之后的值就和 prop 没关系了，因为你更新了一个新的组件，就是因为用了key。
+>
+> ```react
+> <EmailInput
+>   defaultEmail={this.props.user.email}
+>   key={this.props.user.id}
+> />
+> ```
+>
+> 为了在不同的页面切换不同的值，我们可以使用 `key` 这个特殊的 React 属性。当 `key` 变化时， React 会[创建一个新的而不是更新一个既有的组件](https://react-1251415695.cos-website.ap-chengdu.myqcloud.com/docs/reconciliation.html#keys)。 Keys 一般用来渲染动态列表，但是这里也可以使用。在这个示例里，当用户输入时，我们使用 user ID 当作 key 重新创建一个新的 email input 组件。
+>
+> ---
+>
+> 每次 ID 更改，都会重新创建 `EmailInput` ，并将其状态重置为最新的 `defaultEmail` 值。
+>
+> 使用此方法，不用为每次输入都添加 `key`，在整个表单上添加 `key` 更有位合理。每次 key 变化，表单里的所有组件都会用新的初始值重新创建。
+>
+> 大部分情况下，这是处理重置 state 的最好的办法。

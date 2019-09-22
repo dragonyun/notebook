@@ -481,3 +481,601 @@ class Test extends Component {
 > 注意
 >
 > 如果发生错误，你可以通过调用 `setState` 使用 `componentDidCatch()` 渲染降级 UI，但在未来的版本中将不推荐这样做。 可以使用静态 `getDerivedStateFromError()` 来处理降级渲染。
+
+### 生命周期注意事项
+
+#### 新老版本生命周期更换的一些解决方案的考虑
+
+##### 初始化state
+
+> 原先的生命周期中，初始化是放在`componentWillMount`中的
+>
+> ```js
+> // Before
+> class ExampleComponent extends React.Component {
+>   state = {};
+> 
+>   componentWillMount() {
+>     this.setState({
+>       currentColor: this.props.defaultColor,
+>       palette: 'rgb',
+>     });
+>   }
+> }
+> ```
+>
+> 现在直接放在构造函数，或者直接给值
+>
+> ```js
+> // After
+> class ExampleComponent extends React.Component {
+>   state = {
+>     currentColor: this.props.defaultColor,
+>     palette: 'rgb',
+>   };
+> }
+> ```
+>
+> 总结：
+>
+> 我觉得没什么说的，我反而想问，以前为什么要放在那个生命周期里呢？
+
+##### 初始请求数据（API）
+
+> 原先的生命周期中，请求是放在`componentWillMount`中的
+>
+> ```js
+> // Before
+> class ExampleComponent extends React.Component {
+>   state = {
+>     externalData: null,
+>   };
+> 
+>   componentWillMount() {
+>     this._asyncRequest = loadMyAsyncData().then(
+>       externalData => {
+>         this._asyncRequest = null;
+>         this.setState({externalData});
+>       }
+>     );
+>   }
+> 
+>   componentWillUnmount() {
+>     if (this._asyncRequest) {
+>       this._asyncRequest.cancel();
+>     }
+>   }
+> 
+>   render() {
+>     if (this.state.externalData === null) {
+>       // Render loading state ...
+>     } else {
+>       // Render real UI ...
+>     }
+>   }
+> }
+> ```
+>
+> 现在是放在`componentDidMount`中的
+>
+> ```js
+> // After
+> class ExampleComponent extends React.Component {
+>   state = {
+>     externalData: null,
+>   };
+> 
+>   componentDidMount() {
+>     this._asyncRequest = loadMyAsyncData().then(
+>       externalData => {
+>         this._asyncRequest = null;
+>         this.setState({externalData});
+>       }
+>     );
+>   }
+> 
+>   componentWillUnmount() {
+>     if (this._asyncRequest) {
+>       this._asyncRequest.cancel();
+>     }
+>   }
+> 
+>   render() {
+>     if (this.state.externalData === null) {
+>       // Render loading state ...
+>     } else {
+>       // Render real UI ...
+>     }
+>   }
+> }
+> ```
+>
+> 总结：
+>
+> 一个是处于SSR的考虑，会跳过`componentWillMount`函数；
+>
+> 一个是开启Async Rendering后，就可能会发多个请求；
+>
+> 这里有一个考量，我们都希望先有数据再渲染，但是你就算是把请求放在`componentWillMount`中，依然不能保证数据早于`render`，所以请求放在挂载之后，没问题的。
+
+##### 订阅监听
+
+> 原先的生命周期中，订阅监听是放在`componentWillMount`中的
+>
+> ```js
+> // Before
+> class ExampleComponent extends React.Component {
+>   componentWillMount() {
+>     this.setState({
+>       subscribedValue: this.props.dataSource.value,
+>     });
+> 
+>     // This is not safe; it can leak!
+>     this.props.dataSource.subscribe(
+>       this.handleSubscriptionChange
+>     );
+>   }
+> 
+>   componentWillUnmount() {
+>     this.props.dataSource.unsubscribe(
+>       this.handleSubscriptionChange
+>     );
+>   }
+> 
+>   handleSubscriptionChange = dataSource => {
+>     this.setState({
+>       subscribedValue: dataSource.value,
+>     });
+>   };
+> }
+> ```
+>
+> 现在的，是放在`componentDidMount`函数中的
+>
+> ```js
+> // After
+> class ExampleComponent extends React.Component {
+>   state = {
+>     subscribedValue: this.props.dataSource.value,
+>   };
+> 
+>   componentDidMount() {
+>     // Event listeners are only safe to add after mount,
+>     // So they won't leak if mount is interrupted or errors.
+>     this.props.dataSource.subscribe(
+>       this.handleSubscriptionChange
+>     );
+> 
+>     // External values could change between render and mount,
+>     // In some cases it may be important to handle this case.
+>     if (
+>       this.state.subscribedValue !==
+>       this.props.dataSource.value
+>     ) {
+>       this.setState({
+>         subscribedValue: this.props.dataSource.value,
+>       });
+>     }
+>   }
+> 
+>   componentWillUnmount() {
+>     this.props.dataSource.unsubscribe(
+>       this.handleSubscriptionChange
+>     );
+>   }
+> 
+>   handleSubscriptionChange = dataSource => {
+>     this.setState({
+>       subscribedValue: dataSource.value,
+>     });
+>   };
+> }
+> ```
+>
+> 总结：
+>
+> 主要一个原因是`compoonentDidMount`函数不一定执行（在Async Rendering环境下），如果它不执行，那么就永远也没法执行`componentWillUnmount`函数，订阅和监听就没法取消掉。为了保证这个，也要移过去。
+
+##### 基于props更新state
+
+> 原先的生命周期中，更新是放在`componentWillReceiveProps`中的
+>
+> ```js
+> // Before
+> class ExampleComponent extends React.Component {
+>   state = {
+>     isScrollingDown: false,
+>   };
+> 
+>   componentWillReceiveProps(nextProps) {
+>     if (this.props.currentRow !== nextProps.currentRow) {
+>       this.setState({
+>         isScrollingDown:
+>           nextProps.currentRow > this.props.currentRow,
+>       });
+>     }
+>   }
+> }
+> ```
+>
+> 现在
+>
+> ```js
+> // After
+> class ExampleComponent extends React.Component {
+>   // Initialize state in constructor,
+>   // Or with a property initializer.
+>   state = {
+>     isScrollingDown: false,
+>     lastRow: null,
+>   };
+> 
+>   static getDerivedStateFromProps(props, state) {
+>     if (props.currentRow !== state.lastRow) {
+>       return {
+>         isScrollingDown: props.currentRow > state.lastRow,
+>         lastRow: props.currentRow,
+>       };
+>     }
+> 
+>     // Return null to indicate no change to state.
+>     return null;
+>   }
+> }
+> ```
+>
+> 总结：
+>
+> 官方怕开发者用的不对，或者说以前的做法容易出错，所以换新的。
+>
+> 新的做法可以看到在做判断的时候是`if (props.currentRow !== state.lastRow) `这里是获取不到prevProps的，因为在最开始第一次这个值将会是null，不方便处理。
+>
+> 还有一个考虑是未来的内存优化问题，暂时还不理解。
+
+##### 调用外部回调
+
+> 旧的做法是放在`componentWillUpdate`里面
+>
+> ```js
+> // Before
+> class ExampleComponent extends React.Component {
+>   componentWillUpdate(nextProps, nextState) {
+>     if (
+>       this.state.someStatefulValue !==
+>       nextState.someStatefulValue
+>     ) {
+>       nextProps.onChange(nextState.someStatefulValue);
+>     }
+>   }
+> }
+> ```
+>
+> 新的做法是放在`componentDidUpdate`里面
+>
+> ```js
+> // After
+> class ExampleComponent extends React.Component {
+>   componentDidUpdate(prevProps, prevState) {
+>     if (
+>       this.state.someStatefulValue !==
+>       prevState.someStatefulValue
+>     ) {
+>       this.props.onChange(this.state.someStatefulValue);
+>     }
+>   }
+> }
+> 
+> ```
+>
+> 总结：
+>
+> 其实，并不是说新的一定比旧方法更正确，可以理解为官方在整体调整生命周期之后的解决方案。
+>
+> 这里旧版在异步模式下可能会多次触发回调函数。
+
+##### props改变的副作用
+
+> ```js
+> // Before
+> class ExampleComponent extends React.Component {
+>   componentWillReceiveProps(nextProps) {
+>     if (this.props.isVisible !== nextProps.isVisible) {
+>       logVisibleChange(nextProps.isVisible);
+>     }
+>   }
+> }
+> ```
+>
+> ```js
+> // After
+> class ExampleComponent extends React.Component {
+>   componentDidUpdate(prevProps, prevState) {
+>     if (this.props.isVisible !== prevProps.isVisible) {
+>       logVisibleChange(this.props.isVisible);
+>     }
+>   }
+> }
+> ```
+>
+> 总结：
+>
+> 其实是一个问题就是`componentWillUpdate`, `componentWillReceiveProps`这样的生命周期函数可能会多次触发导致问题，所以很多情况下，推荐使用`componentDidUpdate`，它可以保证只执行一次。
+
+##### props改变时的请求数据（API）
+
+> ```js
+> // Before
+> class ExampleComponent extends React.Component {
+>   state = {
+>     externalData: null,
+>   };
+> 
+>   componentDidMount() {
+>     this._loadAsyncData(this.props.id);
+>   }
+> 
+>   componentWillReceiveProps(nextProps) {
+>     if (nextProps.id !== this.props.id) {
+>       this.setState({externalData: null});
+>       this._loadAsyncData(nextProps.id);
+>     }
+>   }
+> 
+>   componentWillUnmount() {
+>     if (this._asyncRequest) {
+>       this._asyncRequest.cancel();
+>     }
+>   }
+> 
+>   render() {
+>     if (this.state.externalData === null) {
+>       // Render loading state ...
+>     } else {
+>       // Render real UI ...
+>     }
+>   }
+> 
+>   _loadAsyncData(id) {
+>     this._asyncRequest = loadMyAsyncData(id).then(
+>       externalData => {
+>         this._asyncRequest = null;
+>         this.setState({externalData});
+>       }
+>     );
+>   }
+> }
+> ```
+>
+> 新的做法是拆分开到两个生命周期中
+>
+> ```js
+> // After
+> class ExampleComponent extends React.Component {
+>   state = {
+>     externalData: null,
+>   };
+> 
+>   static getDerivedStateFromProps(props, state) {
+>     // Store prevId in state so we can compare when props change.
+>     // Clear out previously-loaded data (so we don't render stale stuff).
+>     if (props.id !== state.prevId) {
+>       return {
+>         externalData: null,
+>         prevId: props.id,
+>       };
+>     }
+> 
+>     // No state update necessary
+>     return null;
+>   }
+> 
+>   componentDidMount() {
+>     this._loadAsyncData(this.props.id);
+>   }
+> 
+>   componentDidUpdate(prevProps, prevState) {
+>     if (this.state.externalData === null) {
+>       this._loadAsyncData(this.props.id);
+>     }
+>   }
+> 
+>   componentWillUnmount() {
+>     if (this._asyncRequest) {
+>       this._asyncRequest.cancel();
+>     }
+>   }
+> 
+>   render() {
+>     if (this.state.externalData === null) {
+>       // Render loading state ...
+>     } else {
+>       // Render real UI ...
+>     }
+>   }
+> 
+>   _loadAsyncData(id) {
+>     this._asyncRequest = loadMyAsyncData(id).then(
+>       externalData => {
+>         this._asyncRequest = null;
+>         this.setState({externalData});
+>       }
+>     );
+>   }
+> }
+> ```
+>
+> 总结：
+>
+>  不论是初始化时的请求，还是更新过程中的请求，
+>
+> 一方面是为了不会多次请求，保证唯一性；
+>
+> 另一方面把功能拆分到了`static getDerivedStateFromProps`和`componentDidUpdate`，与原生命周期的做法等价。
+
+##### 在更新之前读取DOM属性
+
+> ```js
+> class ScrollingList extends React.Component {
+>   listRef = null;
+>   previousScrollOffset = null;
+> 
+>   componentWillUpdate(nextProps, nextState) {
+>     // Are we adding new items to the list?
+>     // Capture the scroll position so we can adjust scroll later.
+>     if (this.props.list.length < nextProps.list.length) {
+>       this.previousScrollOffset =
+>         this.listRef.scrollHeight - this.listRef.scrollTop;
+>     }
+>   }
+> 
+>   componentDidUpdate(prevProps, prevState) {
+>     // If previousScrollOffset is set, we've just added new items.
+>     // Adjust scroll so these new items don't push the old ones out of view.
+>     if (this.previousScrollOffset !== null) {
+>       this.listRef.scrollTop =
+>         this.listRef.scrollHeight -
+>         this.previousScrollOffset;
+>       this.previousScrollOffset = null;
+>     }
+>   }
+> 
+>   render() {
+>     return (
+>       <div ref={this.setListRef}>
+>         {/* ...contents... */}
+>       </div>
+>     );
+>   }
+> 
+>   setListRef = ref => {
+>     this.listRef = ref;
+>   };
+> }
+> ```
+>
+> ```js
+> class ScrollingList extends React.Component {
+>   listRef = null;
+>   previousScrollOffset = null;
+> 
+>   componentWillUpdate(nextProps, nextState) {
+>     // Are we adding new items to the list?
+>     // Capture the scroll position so we can adjust scroll later.
+>     if (this.props.list.length < nextProps.list.length) {
+>       this.previousScrollOffset =
+>         this.listRef.scrollHeight - this.listRef.scrollTop;
+>     }
+>   }
+> 
+>   componentDidUpdate(prevProps, prevState) {
+>     // If previousScrollOffset is set, we've just added new items.
+>     // Adjust scroll so these new items don't push the old ones out of view.
+>     if (this.previousScrollOffset !== null) {
+>       this.listRef.scrollTop =
+>         this.listRef.scrollHeight -
+>         this.previousScrollOffset;
+>       this.previousScrollOffset = null;
+>     }
+>   }
+> 
+>   render() {
+>     return (
+>       <div ref={this.setListRef}>
+>         {/* ...contents... */}
+>       </div>
+>     );
+>   }
+> 
+>   setListRef = ref => {
+>     this.listRef = ref;
+>   };
+> }
+> ```
+>
+> ```js
+> class ScrollingList extends React.Component {
+>   listRef = null;
+>   previousScrollOffset = null;
+> 
+>   componentWillUpdate(nextProps, nextState) {
+>     // Are we adding new items to the list?
+>     // Capture the scroll position so we can adjust scroll later.
+>     if (this.props.list.length < nextProps.list.length) {
+>       this.previousScrollOffset =
+>         this.listRef.scrollHeight - this.listRef.scrollTop;
+>     }
+>   }
+> 
+>   componentDidUpdate(prevProps, prevState) {
+>     // If previousScrollOffset is set, we've just added new items.
+>     // Adjust scroll so these new items don't push the old ones out of view.
+>     if (this.previousScrollOffset !== null) {
+>       this.listRef.scrollTop =
+>         this.listRef.scrollHeight -
+>         this.previousScrollOffset;
+>       this.previousScrollOffset = null;
+>     }
+>   }
+> 
+>   render() {
+>     return (
+>       <div ref={this.setListRef}>
+>         {/* ...contents... */}
+>       </div>
+>     );
+>   }
+> 
+>   setListRef = ref => {
+>     this.listRef = ref;
+>   };
+> }
+> ```
+>
+> 希望在更新前后保留滚动条位置，这个场景在Async Rendering下 *比较特殊* ,因为 `componentWillUpdate `属于第1阶段，实际DOM更新在第2阶段，两个阶段之间允许其它任务及用户交互，如果 `componentWillUpdate `之后，用户 `resize `窗口或者滚动列表（ `scrollHeight `和 `scrollTop `发生变化），就会导致DOM更新阶段应用旧值.
+>
+> 可以通过 `getSnapshotBeforeUpdate + componentDidUpdate `来解：
+>
+> ```js
+> class ScrollingList extends React.Component {
+>   listRef = null;
+> 
+>   getSnapshotBeforeUpdate(prevProps, prevState) {
+>     // Are we adding new items to the list?
+>     // Capture the scroll position so we can adjust scroll later.
+>     if (prevProps.list.length < this.props.list.length) {
+>       return (
+>         this.listRef.scrollHeight - this.listRef.scrollTop
+>       );
+>     }
+>     return null;
+>   }
+> 
+>   componentDidUpdate(prevProps, prevState, snapshot) {
+>     // If we have a snapshot value, we've just added new items.
+>     // Adjust scroll so these new items don't push the old ones out of view.
+>     // (snapshot here is the value returned from getSnapshotBeforeUpdate)
+>     if (snapshot !== null) {
+>       this.listRef.scrollTop =
+>         this.listRef.scrollHeight - snapshot;
+>     }
+>   }
+> 
+>   render() {
+>     return (
+>       <div ref={this.setListRef}>
+>         {/* ...contents... */}
+>       </div>
+>     );
+>   }
+> 
+>   setListRef = ref => {
+>     this.listRef = ref;
+>   };
+> }
+> ```
+>
+> 总结：
+>
+> `getSnapshotBeforeUpdate `是在第2阶段更新实际DOM之前调用，从这里到实际DOM更新之间不会被打断。
+>
+> 这里更多的提到了`Async Rendering`这个概念，很多问题都是由它引发的，这里的生命周期的更替都还好理解，主要是这个概念是干什么用的，异步渲染？？？
