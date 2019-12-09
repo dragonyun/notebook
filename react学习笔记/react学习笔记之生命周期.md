@@ -8,7 +8,7 @@ typora-root-url: img
 
   > 大体一致，不过我还是自己写一遍，加一些自己的想法。
 
-
+---
 
 ### 生命周期图
 
@@ -34,15 +34,13 @@ typora-root-url: img
 
 ### 旧版生命周期图解读
 
-
-
 #### 组件初始化(initialization)阶段
 
 > 也就是以下代码中类的构造方法( constructor() ),Test类继承了React.Component这个基类，也就继承这个react的基类，才能有render(),生命周期等方法可以使用，这也说明为什么**函数组件不能使用这些方法**的原因。
 
 > `super(props)`用来调用基类的构造方法( constructor() ), 也将父组件的props注入给子组件，供子组件读取(组件中props只读不可变，state可变)。
 >
-> <font color="red">注意</font>：`super(props)`应放在其他语句之前调用，否则在构造函数中`this.props`可能会出现未定义的bug。
+> <font color="red">注意</font>：`super(props)`应放在其他语句之前调用，否则在**构造函数**中`this.props`可能会出现未定义的bug。
 >
 > 而`constructor()`用来做一些组件的初始化工作，如定义this.state的初始内容。
 
@@ -107,7 +105,7 @@ class Test extends Component {
 
 > 此阶段分为`componentWillMount`，`render`，`componentDidMount`三个时期。
 
-- `componentWillMount()`
+- `componentWillMount()`（v17之后弃用）
 
   > 在组件挂载到DOM前调用，且只会被调用一次，在这边调用`this.setState`不会引起组件重新渲染，也可以把写在这边的内容提前到constructor()中，所以项目中很少用。
   >
@@ -278,6 +276,8 @@ class Test extends Component {
   >
   > 不应该调用`setState()`，因为卸载了，所以永远不会生效
 
+---
+
 ### 新版生命周期解读（v16）
 
 > 如上图，生命周期被改动了，v16.04之后都遵循着新版的生命周期
@@ -285,7 +285,7 @@ class Test extends Component {
 #### 新版生命周期函数一览
 
 > - 挂载阶段
->   - constructor()
+>   - `constructor()`
 >   - `static getDerivedStateFromProps()`
 >   - `render()`
 >   - `componentDidMount()`
@@ -448,33 +448,33 @@ class Test extends Component {
 >
 > ```js
 > class ErrorBoundary extends React.Component {
->   constructor(props) {
->     super(props);
->     this.state = { hasError: false };
->   }
+> constructor(props) {
+>  super(props);
+>  this.state = { hasError: false };
+> }
 > 
->   static getDerivedStateFromError(error) {
->     // 更新 state 使下一次渲染可以显示降级 UI
->     return { hasError: true };
->   }
+> static getDerivedStateFromError(error) {
+>  // 更新 state 使下一次渲染可以显示降级 UI
+>  return { hasError: true };
+> }
 > 
->   componentDidCatch(error, info) {
->     // "组件堆栈" 例子:
->     //   in ComponentThatThrows (created by App)
->     //   in ErrorBoundary (created by App)
->     //   in div (created by App)
->     //   in App
->     logComponentStackToMyService(info.componentStack);
->   }
+> componentDidCatch(error, info) {
+>  // "组件堆栈" 例子:
+>  //   in ComponentThatThrows (created by App)
+>  //   in ErrorBoundary (created by App)
+>  //   in div (created by App)
+>  //   in App
+>  logComponentStackToMyService(info.componentStack);
+> }
 > 
->   render() {
->     if (this.state.hasError) {
->       // 你可以渲染任何自定义的降级 UI
->       return <h1>Something went wrong.</h1>;
->     }
+> render() {
+>  if (this.state.hasError) {
+>    // 你可以渲染任何自定义的降级 UI
+>    return <h1>Something went wrong.</h1>;
+>  }
 > 
->     return this.props.children; 
->   }
+>  return this.props.children; 
+> }
 > }
 > ```
 >
@@ -482,25 +482,27 @@ class Test extends Component {
 >
 > 如果发生错误，你可以通过调用 `setState` 使用 `componentDidCatch()` 渲染降级 UI，但在未来的版本中将不推荐这样做。 可以使用静态 `getDerivedStateFromError()` 来处理降级渲染。
 
+----
+
 ### 生命周期注意事项
 
 #### 新老版本生命周期更换的一些解决方案的考虑
 
-##### 初始化state
+##### 1.初始化state
 
 > 原先的生命周期中，初始化是放在`componentWillMount`中的
 >
 > ```js
 > // Before
 > class ExampleComponent extends React.Component {
->   state = {};
+>   	state = {};
 > 
->   componentWillMount() {
->     this.setState({
->       currentColor: this.props.defaultColor,
->       palette: 'rgb',
->     });
->   }
+>       componentWillMount() {
+>         this.setState({
+>           currentColor: this.props.defaultColor,
+>           palette: 'rgb',
+>         });
+>       }
 > }
 > ```
 >
@@ -509,10 +511,10 @@ class Test extends Component {
 > ```js
 > // After
 > class ExampleComponent extends React.Component {
->   state = {
->     currentColor: this.props.defaultColor,
->     palette: 'rgb',
->   };
+>       state = {
+>         currentColor: this.props.defaultColor,
+>         palette: 'rgb',
+>       };
 > }
 > ```
 >
@@ -520,7 +522,7 @@ class Test extends Component {
 >
 > 我觉得没什么说的，我反而想问，以前为什么要放在那个生命周期里呢？
 
-##### 初始请求数据（API）
+##### 2.初始请求数据（API）
 
 > 原先的生命周期中，请求是放在`componentWillMount`中的
 >
@@ -598,7 +600,7 @@ class Test extends Component {
 >
 > 这里有一个考量，我们都希望先有数据再渲染，但是你就算是把请求放在`componentWillMount`中，依然不能保证数据早于`render`，所以请求放在挂载之后，没问题的。
 
-##### 订阅监听
+##### 3.订阅监听
 
 > 原先的生命周期中，订阅监听是放在`componentWillMount`中的
 >
@@ -674,9 +676,9 @@ class Test extends Component {
 >
 > 总结：
 >
-> 主要一个原因是`compoonentDidMount`函数不一定执行（在Async Rendering环境下），如果它不执行，那么就永远也没法执行`componentWillUnmount`函数，订阅和监听就没法取消掉。为了保证这个，也要移过去。
+> 主要一个原因是`componentDidMount`函数不一定执行（在Async Rendering环境下），如果它不执行，那么就永远也没法执行`componentWillUnmount`函数，订阅和监听就没法取消掉。为了保证这个，也要移过去。
 
-##### 基于props更新state
+##### 4.基于props更新state
 
 > 原先的生命周期中，更新是放在`componentWillReceiveProps`中的
 >
@@ -732,7 +734,7 @@ class Test extends Component {
 >
 > 还有一个考虑是未来的内存优化问题，暂时还不理解。
 
-##### 调用外部回调
+##### 5.调用外部回调
 
 > 旧的做法是放在`componentWillUpdate`里面
 >
@@ -773,7 +775,7 @@ class Test extends Component {
 >
 > 这里旧版在异步模式下可能会多次触发回调函数。
 
-##### props改变的副作用
+##### 6.props改变的副作用
 
 > ```js
 > // Before
@@ -801,7 +803,7 @@ class Test extends Component {
 >
 > 其实是一个问题就是`componentWillUpdate`, `componentWillReceiveProps`这样的生命周期函数可能会多次触发导致问题，所以很多情况下，推荐使用`componentDidUpdate`，它可以保证只执行一次。
 
-##### props改变时的请求数据（API）
+##### 7.props改变时的请求数据（API）
 
 > ```js
 > // Before
@@ -912,7 +914,7 @@ class Test extends Component {
 >
 > 另一方面把功能拆分到了`static getDerivedStateFromProps`和`componentDidUpdate`，与原生命周期的做法等价。
 
-##### 在更新之前读取DOM属性
+##### 8.在更新之前读取DOM属性
 
 > ```js
 > class ScrollingList extends React.Component {
