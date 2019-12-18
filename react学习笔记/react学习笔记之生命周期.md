@@ -12,6 +12,8 @@ typora-root-url: img
 
 ### 生命周期图
 
+
+
 #### v16版本之后的生命周期图
 
 - 生命周期图官方网址：**http://projects.wojtekmaj.pl/react-lifecycle-methods-diagram/**
@@ -24,6 +26,8 @@ typora-root-url: img
 
 ![react生命周期图en](/react生命周期图en.png)
 
+
+
 #### v16版本之前的生命周期图
 
 - 生命周期图
@@ -33,6 +37,8 @@ typora-root-url: img
 ---
 
 ### 旧版生命周期图解读
+
+
 
 #### 组件初始化(initialization)阶段
 
@@ -140,6 +146,8 @@ class Test extends Component {
   > 2.订阅。记得在卸载时取消订阅
   >
   > 3.可直接调用`setState()`（不推荐）
+
+
 
 #### 组件的更新(Updation)阶段
 
@@ -262,6 +270,8 @@ class Test extends Component {
   >
   > - 可直接调用setSate()函数，但是它必须放在条件语句里，否则会死循环的。
 
+
+
 #### 卸载阶段(Unmouting)阶段
 
 > 此阶段只有一个生命周期方法：`componentWillUnmount`
@@ -282,6 +292,8 @@ class Test extends Component {
 
 > 如上图，生命周期被改动了，v16.04之后都遵循着新版的生命周期
 
+
+
 #### 新版生命周期函数一览
 
 > - 挂载阶段
@@ -300,6 +312,8 @@ class Test extends Component {
 > - 错误处理
 >   - `static getDerivedStateFromError()`
 >   - `componentDidCatch()`
+
+
 
 #### 变更缘由
 
@@ -321,6 +335,8 @@ class Test extends Component {
 > <font color="red">就是因为React提供了异步的功能，所以为了保证渲染的时候数据不出错。把render之前的生命周期函数合并为一个静态函数。这样挺好的，与其告诉开发者这里要注意那里要注意，不如就官方默认规定好，用不了就是不允许。</font>
 
 ----
+
+
 
 #### 新加入的生命周期
 
@@ -380,11 +396,14 @@ class Test extends Component {
   ```
 
 
+
 #### 去除的生命周期
 
 - `componentWillMount`，`componentWillReceiveProps`，`componentWillUpdate`
 
   > 都位于render之前，被`getDerivedStateFromProps`替换掉。
+
+
 
 #### 异常捕获
 
@@ -485,6 +504,8 @@ class Test extends Component {
 ----
 
 ### 生命周期注意事项
+
+
 
 #### 新老版本生命周期更换的一些解决方案的考虑
 
