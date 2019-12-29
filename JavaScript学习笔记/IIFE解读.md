@@ -1,5 +1,7 @@
 ## IIFE解读
 
+参考<https://www.cnblogs.com/yiven/p/8462666.html>
+
 说明：
 
 谈到这个问题主要是因为看webpack打包的时候看到的，忽然茅塞顿开，想通了很多东西。
@@ -66,7 +68,65 @@ foo();
 
 
 
-### **4. 小结**
+### 4.**IIFE构造单例模式**
+
+JS的模块就是函数，最常见的模块定义如下：
+
+```js
+function myModule(){
+  var someThing = "123";
+  var otherThing = [1,2,3];
+
+  function doSomeThing(){
+    console.log(someThing);
+  }
+
+  function doOtherThing(){
+    console.log(otherThing);
+  }
+
+  return {
+    doSomeThing:doSomeThing,
+    doOtherThing:doOtherThing
+  }
+}
+
+var foo = myModule();
+foo.doSomeThing();
+foo.doOtherThing();
+
+var foo1 = myModule();
+foo1.doSomeThing();
+```
+
+如果需要一个单例模式的模块，那么可以利用IIFE：
+
+```js
+var myModule = (function module(){
+  var someThing = "123";
+  var otherThing = [1,2,3];
+
+  function doSomeThing(){
+    console.log(someThing);
+  }
+
+  function doOtherThing(){
+    console.log(otherThing);
+  }
+
+  return {
+    doSomeThing:doSomeThing,
+    doOtherThing:doOtherThing
+  }
+})();
+
+myModule.doSomeThing();
+myModule.doOtherThing();
+```
+
+
+
+### **5. 小结**
 IIFE的目的是为了隔离作用域，防止污染全局命名空间。
 
 ---
