@@ -30,7 +30,7 @@ npm run premock -->  npm run mock  -->  npm run postmock
 
 例如：运行npm run build，会按以下顺序执行：
 
-npm run prebuild -->  npm run build -->  npm run postbuild
+**npm run prebuild -->  npm run build -->  npm run postbuild**
 
 pre脚本和post脚本也是出口代码敏感(exit-code-sensitive) 的，这意味着如果您的pre脚本以非零出口代码退出，那么NPM将立即停止，并且不运行后续脚本。
 
