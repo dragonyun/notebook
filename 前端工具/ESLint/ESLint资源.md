@@ -1,6 +1,8 @@
 ## ESLint资源
 
-### 官方文档
+### 权威文档
 
-> ​	<https://eslint.bootcss.com/>
+> 官方文档：http://lesscss.cn/
+>
+> bootcss教程：https://eslint.bootcss.com/
 
