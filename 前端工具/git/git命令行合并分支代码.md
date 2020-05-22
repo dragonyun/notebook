@@ -11,7 +11,7 @@
 
 3. 合并分支
 
-   git merge master
+   git merge master（如果是远程仓库，就是origin/master）
 
 4. 查看状态
 
