@@ -56,6 +56,8 @@ CSS 入门简单，深入比较难，样式简单维护难，CSS 发展不成熟
 
 ---
 
+​	CSS Modules 的核心思路是**生成一个独一无二的`class`名称，不会与其他选择器重名。**
+
 ​	CSS Modules不是将CSS改造的具有编程能力，而是加入了**局部作用域**、**依赖管理**，这恰恰解决了最大的痛点。
 
 ​	可以有效避免全局污染和样式冲突，能最大化地结合现有 CSS 生态和 JS 模块化能力。
@@ -66,7 +68,55 @@ CSS 入门简单，深入比较难，样式简单维护难，CSS 发展不成熟
 
 ---
 
-CSS Modules 很容易学。webpack 自带的 `css-loader` 组件，自带了 CSS Modules，通过简单的配置即可使用。
+CSS Modules 很容易学。
+
+#### 基本用法
+
+现在我们来写个Button组件
+
+```js
+/* Button.css */
+.primary {
+    background-color: #1aad19;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+}
+
+// Button.js
+import styles from './Button.css';
+
+console.log(styles); // -> {primary: "yTXmm0isaXExoYiZUvKxH"}
+const Button = document.createElement('div')
+Button.innerHTML = `<button class=${styles.primary}>Submit</button>`
+
+export default Button
+
+// index.js
+import Button from './components/Button'
+
+const app = document.getElementById('root')
+app.appendChild(Button)
+```
+
+生成HTML为
+
+```html
+<div id="root">
+    <div>
+        <button class="yTXmm0isaXExoYiZUvKxH">Submit</button>
+    </div>
+</div>
+<!-- yTXmm0isaXExoYiZUvKxH为CSS Modules自动生成的class类名 -->
+```
+
+CSS Modules 对 CSS 中的 class 名都做了处理，使用对象来保存原 class 和混淆后 class 的对应关系。CSS Modules自动生成的class类名基本就是唯一的，大大降低了项目中样式覆盖冲突的几率。
+
+
+
+#### 构建配置
+
+在构建的时候，webpack 自带的 `css-loader` 组件，自带了 CSS Modules，通过简单的配置即可使用。
 
 ```js
 // webpack.config.js
@@ -99,46 +149,6 @@ module.exports = {
 // loader: "style-loader!css-loader?modules"
 ```
 
-现在我们来写个Button组件
-
-```js
-/* Button.css */
-.primary {
-    background-color: #1aad19;
-    color: #fff;
-    border: none;
-    border-radius: 5px;
-}
-
-// Button.js
-import styles from './Button.css';
-
-console.log(styles); // -> {primary: "yTXmm0isaXExoYiZUvKxH"}
-const Button = document.createElement('div')
-Button.innerHTML = `<button class=${styles.primary}>Submit</button>`
-
-export default Button
-
-// index.js
-import Button from './components/Button'
-
-const app = document.getElementById('root')
-app.appendChild(Button)
-```
-
-生成HTML为
-
-```
-<div id="root">
-    <div>
-        <button class="yTXmm0isaXExoYiZUvKxH">Submit</button>
-    </div>
-</div>
-<!-- yTXmm0isaXExoYiZUvKxH为CSS Modules自动生成的class类名 -->
-```
-
-CSS Modules 对 CSS 中的 class 名都做了处理，使用对象来保存原 class 和混淆后 class 的对应关系。CSS Modules自动生成的class类名基本就是唯一的，大大降低了项目中样式覆盖冲突的几率。
-
 
 
 ### 定制class类名
@@ -167,22 +177,18 @@ loader: 'style-loader!css-loader?modules&localIdentName=[name]__[local]--[hash:b
 
 ### 作用域
 
+---
+
 通过前面的例子可以感受到CSS module处理CSS的方式。现在我们从头来说作用域。
 
-### 默认局部作用
+#### 默认局部作用
 
-CSS很多问题都是因为全局作用域引起的，怎么样才能产生局部作用域？通过前面CSS module的例子我们发现它思路很简单就是生成唯一的class类名。CSS module将class转换成对应的全局唯一hash值来形成局部作用域。使用了 CSS Modules 后，就相当于给每个 class 名外加了一个 `:local` 这是默认的，也可以显式使用
+CSS很多问题都是因为全局作用域引起的，怎么样才能产生局部作用域？
 
-当然，如果你想切换到全局模式，CSS Modules 允许使用`:global(.className)`的语法，声明一个全局规则。凡是这样声明的`class`，都不会被编译成哈希字符串。
+通过前面CSS module的例子我们发现它思路很简单就是**生成唯一的class类名**。CSS module将class转换成对应的全局唯一hash值来形成局部作用域。使用了 CSS Modules 后，就相当于给每个 class 名外加了一个 `:local` 这是默认的，也可以显式使用
 
-```
+```css
 /* Button.css */
-:global(.btn) {
-    color: #fff;
-    border: none;
-    border-radius: 5px;
-}
-
 .primary {
     background-color: #1aad19;
 }
@@ -191,18 +197,39 @@ CSS很多问题都是因为全局作用域引起的，怎么样才能产生局�
 与上面不加`:local`等价 
 显式的局部作用域语法
 */
-:local(.warn) {
+:local(.primary) {
     background-color: #e64340
 }
 ```
 
 
 
+#### 全局作用域
+
+CSS Modules 允许使用`:global(.className)`的语法，声明一个全局规则。凡是这样声明的`class`，都不会被编译成哈希字符串。
+
+```css
+/* Button.css */
+:global(.btn) {
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+}
+```
+
+
+
+
+
 ### CSS Modules下的样式复用
+
+---
+
+#### class组合
 
 对于样式复用，CSS Modules 提供了 `composes` 组合 的方式来处理。一个选择器可以继承另一个选择器的规则
 
-```
+```css
 /* Button.css */
 
 .btn {
@@ -221,7 +248,7 @@ CSS很多问题都是因为全局作用域引起的，怎么样才能产生局�
 
 Button.js
 
-```
+```js
 import styles from './Button.css';
 
 console.log(styles);
@@ -233,7 +260,7 @@ export default Button
 
 生成的 HTML 变为
 
-```
+```html
 <div id="root">
     <div>
         <button class="Button__primary--yTXmm Button__btn--nx67B">Submit</button>
@@ -243,9 +270,13 @@ export default Button
 
 我们发现在 `.primary` 中 composes 了 `.btn`，编译后 `.primary` 会变成两个 class。
 
+
+
+#### 输入其他模块
+
 composes 还可以也可以继承组合其他CSS文件里面的规则
 
-```
+```css
 /* author.css */
 
 .shadow {
@@ -255,7 +286,7 @@ composes 还可以也可以继承组合其他CSS文件里面的规则
 
 Button.css
 
-```
+```css
 ···
 .primary {
     composes: btn;
@@ -268,6 +299,20 @@ Button.css
 这是个很强大方便的功能，CSS Modules团队成员认为`composes`是CSS Modules里最强大的功能：
 
 > For me, the most powerful idea in CSS Modules is composition, where you can deconstruct your visual inventory into atomic classes, and assemble them at a module level, without duplicating markup or hindering performance.
+
+
+
+#### 输入变量
+
+CSS Modules 支持使用变量，不过需要安装 PostCSS 和 [postcss-modules-values](https://github.com/css-modules/postcss-modules-values)。
+
+把`postcss-loader`加入[`webpack.config.js`](https://github.com/ruanyf/css-modules-demos/blob/master/demo06/webpack.config.js)。
+
+```js
+loader: "style-loader!css-loader?modules!postcss-loader"
+```
+
+
 
 ### 一些建议
 
@@ -283,3 +328,9 @@ Button.css
 CSS Modules 很好的解决了 CSS 目前面临的一些痛点以及模块化难题，同时也支持与 Sass/Less/PostCSS 等搭配使用。
 
 无论是通过遵循的命名标准化的规范，还是使用本文介绍的CSS Modules，目的都是一样：可维护的css代码。具体使用不是有还是要结合自己的场景来决定。适合的才是最好的
+
+
+
+### 引用文献
+
+- 阮一峰  <http://www.ruanyifeng.com/blog/2016/06/css_modules.html>
