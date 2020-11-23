@@ -6,88 +6,128 @@
 
 
 
-### 何时使用 Context
+### 背景和场景
 
-Context 设计目的是为了共享那些对于一个组件树而言是“全局”的数据，例如当前认证的用户、主题或首选语言。举个例子，在下面的代码中，我们通过一个 “theme” 属性手动调整一个按钮组件的样式：
+---
 
-```js
-class App extends React.Component {
-  render() {
-    return <Toolbar theme="dark" />;
-  }
-}
+Context 为一个典型应用场景提供了解决方案，那就是**全局式**的props。
 
-function Toolbar(props) {
-  // Toolbar 组件接受一个额外的“theme”属性，然后传递给 ThemedButton 组件。
-  // 如果应用中每一个单独的按钮都需要知道 theme 的值，这会是件很麻烦的事，
-  // 因为必须将这个值层层传递所有组件。
-  return (
-    <div>
-      <ThemedButton theme={props.theme} />
-    </div>
-  );
-}
+最直观的例子就是**地区偏好（语言）**，**UI主题（颜色风格）**，**组件尺寸（大小）**。
 
-class ThemedButton extends React.Component {
-  render() {
-    return <Button theme={this.props.theme} />;
-  }
-}
-```
-
-使用 context, 我们可以避免通过中间元素传递 props：
-
-```jsx
-// Context 可以让我们无须明确地传遍每一个组件，就能将值深入传递进组件树。
-// 为当前的 theme 创建一个 context（“light”为默认值）。
-const ThemeContext = React.createContext('light');
-class App extends React.Component {
-  render() {
-    // 使用一个 Provider 来将当前的 theme 传递给以下的组件树。
-    // 无论多深，任何组件都能读取这个值。
-    // 在这个例子中，我们将 “dark” 作为当前的值传递下去。
-    return (
-      <ThemeContext.Provider value="dark">
-        <Toolbar />
-      </ThemeContext.Provider>
-    );
-  }
-}
-
-// 中间的组件再也不必指明往下传递 theme 了。
-function Toolbar() {
-  return (
-    <div>
-      <ThemedButton />
-    </div>
-  );
-}
-
-class ThemedButton extends React.Component {
-  // 指定 contextType 读取当前的 theme context。
-  // React 会往上找到最近的 theme Provider，然后使用它的值。
-  // 在这个例子中，当前的 theme 值为 “dark”。
-  static contextType = ThemeContext;
-  render() {
-    return <Button theme={this.context} />;
-  }
-}
-```
-
-### 使用 Context 之前的考虑
-
-Context 主要应用场景在于*很多*不同层级的组件需要访问同样一些的数据。请谨慎使用，因为这会使得组件的复用性变差。
-
-**如果你只是想避免层层传递一些属性，组件组合（component composition）有时候是一个比 context 更好的解决方案。**
-
-也就是说可以直接传组件下去，把组件当做属性，这样无需使用 context。
-
-这种模式足够覆盖很多场景了，在这些场景下你需要将子组件和直接关联的父组件解耦。如果子组件需要在渲染前和父组件进行一些交流，你可以进一步使用 [render props](https://react.docschina.org/docs/render-props.html)。
-
-但是，有的时候在组件树中很多不同层级的组件需要访问同样的一批数据。Context 能让你将这些数据向组件树下所有的组件进行“广播”，所有的组件都能访问到这些数据，也能访问到后续的数据更新。使用 context 的通用的场景包括管理当前的 locale，theme，或者一些缓存数据，这比替代方案要简单的多。
+更倾向于**全局式**的使用场景，而不是作为几个或者几层组件的**数据共享**。
 
 
 
-### API
+### API一览
 
-#### `React.createContext`
+---
+
+- `React.createContext`
+- `Context.Provider`
+- `Class.contextType`
+- `Context.Consumer`
+- `Context.displayName`
+
+
+
+### 基本使用规则
+
+---
+
+1. 首先通过`React.createContext`创建一个context对象。
+2. 通过默认初值或者`Context.Provider`来控制这个全局变量。
+3. 下级组件通过`Class.contextType`或者`Context.Consumer`获取该变量。
+4. 根据变量重新渲染组件，触发相关逻辑。
+
+
+
+### 注意点
+
+----
+
+1. `React.createContext`
+
+   ```js
+   const MyContext = React.createContext(defaultValue);
+   ```
+
+   这里是在创建一个Context对象。`defaultValue`是默认值，如果没有匹配到provider的话，就使用这个默认值。并且，这个默认值可以作为一个对象，包含多个子项。
+
+   例如antd的样式前缀就是这样实现的。
+
+2. `Context.Provider`
+
+   ```js
+   <MyContext.Provider value={/* 某个值 */}>
+   ```
+
+   从Context对象中可以得到provider组件和customer组件。
+
+   使用上是如果不想使用默认值，可以用provider来变化这个数据。
+
+   那么这个provider组件和customer组件是成对使用的，它们构成订阅发布模式。
+
+3. `Class.contextType`
+
+   在class组件中通过它接收context对象，然后在组件内可以使用`this.context`。
+
+4. class和函数式组件
+
+   函数式组件只能通过订阅的方式，而不能通过class属性获取context。
+
+   class组件两种都可以实现。
+
+5. 嵌套组件中的更新context
+
+   就是在很深的组件中去更新顶层的context，很有必要
+
+   ```js
+   // 确保传递给 createContext 的默认值数据结构是调用的组件（consumers）所能匹配的！
+   export const ThemeContext = React.createContext({
+     theme: themes.dark,
+     toggleTheme: () => {},
+   });
+   ```
+
+   可以通过在创建时传递方法进去，让深处的组件直接调用修改context。
+
+6. 有个坑，provider的重新渲染可能会触发customer的意外渲染
+
+   下面这个例子里value属性总是会被赋值为新的对象，根据参考标识原则，会触发更新。
+
+   ```js
+   class App extends React.Component {
+     render() {
+       return (
+         <MyContext.Provider value={{something: 'something'}}>
+           <Toolbar />
+         </MyContext.Provider>
+       );
+     }
+   }
+   // 为了防止这种情况，将 value 状态提升到父节点的 state 里：
+   class App extends React.Component {
+     constructor(props) {
+       super(props);
+       this.state = {
+         value: {something: 'something'},
+       };
+     }
+   
+     render() {
+       return (
+         <Provider value={this.state.value}>
+           <Toolbar />
+         </Provider>
+       );
+     }
+   }
+   ```
+
+   
+
+
+
+### 参考文档
+
+- 官方文档：`https://react.docschina.org/docs/context.html`
